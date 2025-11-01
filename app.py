@@ -43,7 +43,7 @@ def synthesize_audio():
     Synthesizes audio from text using Piper TTS.
     """
     text = request.args.get('text')
-    voice = request.args.get('voice', 'en_US-lessac-medium') # Default voice
+    voice = request.args.get('voice', 'en_GB-alba-medium') # Default voice
 
     if not text:
         return jsonify({"error": "Text to synthesize is required."}), 400
