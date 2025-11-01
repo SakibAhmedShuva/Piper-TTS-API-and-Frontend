@@ -1,0 +1,42 @@
+{
+	"info": {
+		"_postman_id": "YOUR_COLLECTION_ID",
+		"name": "NOW Piper TTS API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Synthesize Audio",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5001/api/tts?text=Hello%2C%20this%20is%20a%20test.&voice=en_US-lessac-medium",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"tts"
+					],
+					"query": [
+						{
+							"key": "text",
+							"value": "Hello, this is a test."
+						},
+						{
+							"key": "voice",
+							"value": "en_US-lessac-medium"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
