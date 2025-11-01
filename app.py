@@ -3,8 +3,9 @@ from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import io
 import logging
+import wave
 
-from piper_tts import PiperTTS
+from piper import PiperVoice
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,19 +14,19 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes.
 
-# In-memory cache for PiperTTS instances
+# In-memory cache for PiperVoice instances
 tts_instances = {}
 
 def get_tts_instance(voice):
     """
-    Retrieves a cached PiperTTS instance or creates a new one.
+    Retrieves a cached PiperVoice instance or creates a new one.
     """
     if voice not in tts_instances:
-        logger.info(f"Creating new PiperTTS instance for voice: {voice}")
+        logger.info(f"Creating new PiperVoice instance for voice: {voice}")
         try:
-            tts_instances[voice] = PiperTTS(voice=f"{voice}.onnx")
+            tts_instances[voice] = PiperVoice.load(f"{voice}.onnx")
         except Exception as e:
-            logger.error(f"Failed to create PiperTTS instance for voice {voice}: {e}")
+            logger.error(f"Failed to create PiperVoice instance for voice {voice}: {e}")
             return None
     return tts_instances[voice]
 
@@ -37,7 +38,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/tts', methods=['GET'])
-async def synthesize_audio():
+def synthesize_audio():
     """
     Synthesizes audio from text using Piper TTS.
     """
@@ -52,14 +53,25 @@ async def synthesize_audio():
         return jsonify({"error": f"Could not load voice model for '{voice}'."}), 500
 
     try:
-        synthesizer = tts_instance.synthesize(text, request_id="local")
-        async with synthesizer as stream:
-            audio_data = bytearray()
-            async for audio in stream:
-                audio_data.extend(audio.frame.data)
-
+        # Synthesize audio
+        audio_data = bytearray()
+        
+        # The synthesize_stream_raw method yields audio chunks
+        for audio_bytes in tts_instance.synthesize_stream_raw(text):
+            audio_data.extend(audio_bytes)
+        
+        # Create WAV file in memory
+        wav_io = io.BytesIO()
+        with wave.open(wav_io, 'wb') as wav_file:
+            wav_file.setnchannels(1)  # Mono
+            wav_file.setsampwidth(2)  # 16-bit
+            wav_file.setframerate(tts_instance.config.sample_rate)
+            wav_file.writeframes(audio_data)
+        
+        wav_io.seek(0)
+        
         return send_file(
-            io.BytesIO(audio_data),
+            wav_io,
             mimetype='audio/wav',
             as_attachment=True,
             download_name='output.wav'
