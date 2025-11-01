@@ -76,29 +76,12 @@ def synthesize_audio():
         return jsonify({"error": f"Could not load voice model for '{voice}'."}), 500
 
     try:
-        # Synthesize audio
+        # Synthesize audio - the synthesize method returns a generator
         audio_data = bytearray()
         
-        # Option 1: Try synthesize_stream (most common method)
-        if hasattr(tts_instance, 'synthesize_stream'):
-            for audio_bytes in tts_instance.synthesize_stream(text):
-                audio_data.extend(audio_bytes)
-        
-        # Option 2: Try synthesize (returns complete audio)
-        elif hasattr(tts_instance, 'synthesize'):
-            audio_data = tts_instance.synthesize(text)
-        
-        # Option 3: Try with wav_file parameter
-        else:
-            wav_io = io.BytesIO()
-            tts_instance.synthesize(text, wav_io)
-            wav_io.seek(0)
-            return send_file(
-                wav_io,
-                mimetype='audio/wav',
-                as_attachment=True,
-                download_name='output.wav'
-            )
+        # Collect all audio chunks from the generator
+        for audio_bytes in tts_instance.synthesize(text):
+            audio_data.extend(audio_bytes)
         
         # Create WAV file in memory
         wav_io = io.BytesIO()
@@ -106,7 +89,7 @@ def synthesize_audio():
             wav_file.setnchannels(1)  # Mono
             wav_file.setsampwidth(2)  # 16-bit
             wav_file.setframerate(tts_instance.config.sample_rate)
-            wav_file.writeframes(audio_data)
+            wav_file.writeframes(bytes(audio_data))
         
         wav_io.seek(0)
         
