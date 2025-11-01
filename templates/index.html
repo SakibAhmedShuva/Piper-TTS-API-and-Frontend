@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piper TTS</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        textarea { width: 100%; height: 100px; }
+        button { margin-top: 1em; }
+        audio { margin-top: 1em; }
+    </style>
+</head>
+<body>
+    <h1>Piper Text-to-Speech</h1>
+    <textarea id="text-input" placeholder="Enter text to synthesize..."></textarea>
+    <br>
+    <label for="voice-select">Select Voice:</label>
+    <select id="voice-select">
+        <option value="en_US-lessac-medium">English (US) - Lessac Medium</option>
+        <!-- Add more voice options here as you download models -->
+    </select>
+    <br>
+    <button id="synthesize-button">Synthesize</button>
+    <br>
+    <audio id="audio-player" controls></audio>
+
+    <script>
+        const textInput = document.getElementById('text-input');
+        const voiceSelect = document.getElementById('voice-select');
+        const synthesizeButton = document.getElementById('synthesize-button');
+        const audioPlayer = document.getElementById('audio-player');
+
+        synthesizeButton.addEventListener('click', async () => {
+            const text = textInput.value;
+            const voice = voiceSelect.value;
+
+            if (!text) {
+                alert('Please enter some text to synthesize.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}&voice=${encodeURIComponent(voice)}`);
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    audioPlayer.src = url;
+                    audioPlayer.play();
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Error fetching audio:', error);
+                alert('An unexpected error occurred.');
+            }
+        });
+    </script>
+</body>
+</html>
